@@ -1,3 +1,4 @@
+from AI import AI
 import math
 import pygame
 
@@ -134,12 +135,15 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 0
         self.rect.y = self.screenheight-self.height
 
+    def init_AI(self,ball,blocks):
+        self.AI = AI(self,ball,blocks)
+
     def update(self):
         """ Update the player position. """
         # Get where the mouse is
-        pos = pygame.mouse.get_pos()
+        move_dist = self.AI.get_next_move()
         # Set the left side of the player bar to the mouse position
-        self.rect.x = pos[0]
+        self.rect.x += move_dist
         # Make sure we don't push the player paddle
         # off the right side of the screen
         if self.rect.x > self.screenwidth - self.width:
@@ -206,6 +210,7 @@ game_over = False
 exit_program = False
 
 # Main program loop
+player.init_AI(ball,blocks)
 while exit_program != True:
 
     # Limit to 30 fps
@@ -246,6 +251,10 @@ while exit_program != True:
 
     # Check for collisions between the ball and the blocks
     deadblocks = pygame.sprite.spritecollide(ball, blocks, True)
+    #print len(blocks)
+    print type(blocks)
+    print blocks.sprites()[0].rect.x
+    print blocks.sprites()[0].rect.y
 
     # If we actually hit a block, bounce the ball
     if len(deadblocks) > 0:
