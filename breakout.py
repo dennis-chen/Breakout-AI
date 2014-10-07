@@ -1,6 +1,7 @@
 from AI import AI
 import math
 import pygame
+from AI import AI
 
 # Define some colors
 black = (0, 0, 0)
@@ -143,6 +144,19 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 0
         self.rect.y = self.screenheight-self.height
 
+    def init_AI(self, ball, blocks):
+        self.AI = AI(self, ball, blocks)
+
+    def update(self):
+        """ Update the player position. """
+        # Get where the mouse is
+        pos = self.AI.follow_the_ball()
+
+        self.rect.x += pos
+        # Set the left selfide of the player bar to the mouse position
+
+        # Make sure we don't push the player paddle
+        # off the right side of the screen
     def init_AI(self,ball,blocks):
         self.AI = AI(self,ball,blocks)
 
@@ -151,6 +165,7 @@ class Player(pygame.sprite.Sprite):
         #move_dist = self.AI.get_random_next_move()
         move_dist = self.AI.follow_ball()
         self.rect.x += move_dist
+
         if self.rect.x > self.screenwidth - self.width:
             self.rect.x = self.screenwidth - self.width
 
@@ -211,9 +226,10 @@ clock = pygame.time.Clock()
 # Is the game over?
 game_over = False
 
-# Exit the program?
+# Exit the program? 
 exit_program = False
 
+player.init_AI(ball,blocks)
 # Main program loop
 player.init_AI(ball,blocks)
 while exit_program != True:
