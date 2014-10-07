@@ -1,3 +1,4 @@
+from AI import AI
 import math
 import pygame
 from AI import AI
@@ -80,6 +81,13 @@ class Ball(pygame.sprite.Sprite):
         self.direction = (180 - self.direction) % 360
         self.direction -= diff
 
+    def bounce_off_paddle(self,diff,player):
+        """ This function will bounce the ball
+            off a paddle."""
+        self.rect.y = self.screenheight - self.height - player.height - 1
+        self.direction = (180 - self.direction) % 360
+        self.direction -= diff
+        print diff
 
     def update(self):
         """ Update the position of the ball. """
@@ -149,6 +157,15 @@ class Player(pygame.sprite.Sprite):
 
         # Make sure we don't push the player paddle
         # off the right side of the screen
+    def init_AI(self,ball,blocks):
+        self.AI = AI(self,ball,blocks)
+
+    def update(self):
+        """ Update the player position. """
+        #move_dist = self.AI.get_random_next_move()
+        move_dist = self.AI.follow_ball()
+        self.rect.x += move_dist
+
         if self.rect.x > self.screenwidth - self.width:
             self.rect.x = self.screenwidth - self.width
 
@@ -214,6 +231,7 @@ exit_program = False
 
 player.init_AI(ball,blocks)
 # Main program loop
+player.init_AI(ball,blocks)
 while exit_program != True:
 
     # Limit to 30 fps
@@ -250,7 +268,8 @@ while exit_program != True:
         # Set the ball's y position in case
         # we hit the ball on the edge of the paddle
         ball.rect.y = screen.get_height() - player.rect.height - ball.rect.height - 1
-        ball.bounce(diff)
+        ball.bounce_off_paddle(diff,player)
+        #ball.bounce(diff)
 
     # Check for collisions between the ball and the blocks
     deadblocks = pygame.sprite.spritecollide(ball, blocks, True)
