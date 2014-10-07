@@ -6,6 +6,7 @@
 """
 import sys
 import pygame
+from AI import AI
 
 SCREEN_SIZE   = 640,480
 
@@ -36,81 +37,82 @@ STATE_PLAYING = 1
 STATE_WON = 2
 STATE_GAME_OVER = 3
 
-class Bricka:
+class BrickView:
 
     def __init__(self):
         pygame.init()
-
         self.screen = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption("bricka (a breakout clone by codeNtronix.com)")
-
-        self.clock = pygame.time.Clock()
-
         if pygame.font:
             self.font = pygame.font.Font(None,30)
         else:
             self.font = None
 
-        self.init_game()
+    def show_stats(self,model):
+        if self.font:
+            font_surface = self.font.render("SCORE: " + str(model.score) + " LIVES: " + str(model.lives), False, WHITE)
+            self.screen.blit(font_surface, (205,5))
 
+    def show_message(self,message):
+        if message is None:
+            return
+        if self.font:
+            size = self.font.size(message)
+            font_surface = self.font.render(message,False, WHITE)
+            x = (SCREEN_SIZE[0] - size[0]) / 2
+            y = (SCREEN_SIZE[1] - size[1]) / 2
+            self.screen.blit(font_surface, (x,y))
 
-    def init_game(self):
+    def fill_screen(self,color):
+        self.screen.fill(color)
+
+    def draw_brick_paddle_ball(self,model):
+        # Draw paddle
+        pygame.draw.rect(self.screen, BLUE, model.paddle)
+        # Draw ball
+        pygame.draw.circle(self.screen, WHITE, (model.ball.left + BALL_RADIUS, model.ball.top + BALL_RADIUS), BALL_RADIUS)
+        # Draw bricks
+        for brick in model.bricks:
+            pygame.draw.rect(self.screen, BRICK_COLOR, brick)
+
+        self.show_stats(model)
+        pygame.display.flip()
+
+    def kill_game(self):
+        pygame.quit()
+
+class BrickModel:
+
+    def __init__(self):
         self.lives = 3
         self.score = 0
         self.state = STATE_BALL_IN_PADDLE
-
         self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
         self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
-
         self.ball_vel = [5,-5]
+        self.create_bricks(35,35,5,5)
 
-        self.create_bricks()
-
-
-    def create_bricks(self):
-        y_ofs = 35
+    def create_bricks(self,i_x_ofs,i_y_ofs,x_spacing,y_spacing):
+        y_ofs = i_y_ofs
         self.bricks = []
         for i in range(7):
-            x_ofs = 35
+            x_ofs = i_x_ofs
             for j in range(8):
                 self.bricks.append(pygame.Rect(x_ofs,y_ofs,BRICK_WIDTH,BRICK_HEIGHT))
-                x_ofs += BRICK_WIDTH + 1
-            y_ofs += BRICK_HEIGHT + 1
-
-    def draw_bricks(self):
-        for brick in self.bricks:
-            pygame.draw.rect(self.screen, BRICK_COLOR, brick)
-
-    def check_input(self):
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_LEFT]:
-            self.paddle.left -= 5
-            if self.paddle.left < 0:
-                self.paddle.left = 0
-
-        if keys[pygame.K_RIGHT]:
-            self.paddle.left += 5
-            if self.paddle.left > MAX_PADDLE_X:
-                self.paddle.left = MAX_PADDLE_X
-
-        if keys[pygame.K_SPACE] and self.state == STATE_BALL_IN_PADDLE:
-            self.ball_vel = [5,-5]
-            self.state = STATE_PLAYING
-        elif keys[pygame.K_RETURN] and (self.state == STATE_GAME_OVER or self.state == STATE_WON):
-            self.init_game()
+                x_ofs += BRICK_WIDTH + x_spacing
+            y_ofs += BRICK_HEIGHT + y_spacing
 
     def move_ball(self):
         self.ball.left += self.ball_vel[0]
         self.ball.top  += self.ball_vel[1]
-
+        #check left and right wall collisions
         if self.ball.left <= 0:
             self.ball.left = 0
             self.ball_vel[0] = -self.ball_vel[0]
         elif self.ball.left >= MAX_BALL_X:
             self.ball.left = MAX_BALL_X
             self.ball_vel[0] = -self.ball_vel[0]
-
+        #check top and bottom collisions? is the bottom collision check useless?
         if self.ball.top < 0:
             self.ball.top = 0
             self.ball_vel[1] = -self.ball_vel[1]
@@ -139,53 +141,68 @@ class Bricka:
             else:
                 self.state = STATE_GAME_OVER
 
-    def show_stats(self):
-        if self.font:
-            font_surface = self.font.render("SCORE: " + str(self.score) + " LIVES: " + str(self.lives), False, WHITE)
-            self.screen.blit(font_surface, (205,5))
+    def check_states(self):
+        display_msg = None
+        if self.state == STATE_PLAYING:
+            self.move_ball()
+            self.handle_collisions()
+        elif self.state == STATE_BALL_IN_PADDLE:
+            self.ball.left = self.paddle.left + self.paddle.width / 2
+            self.ball.top  = self.paddle.top - self.ball.height
+            display_msg = "PRESS SPACE TO LAUNCH THE BALL"
+        elif self.state == STATE_GAME_OVER:
+            display_msg = "GAME OVER. PRESS ENTER TO PLAY AGAIN"
+        elif self.state == STATE_WON:
+            display_msg = "YOU WON! PRESS ENTER TO PLAY AGAIN"
+        return display_msg, self.state == STATE_GAME_OVER
 
-    def show_message(self,message):
-        if self.font:
-            size = self.font.size(message)
-            font_surface = self.font.render(message,False, WHITE)
-            x = (SCREEN_SIZE[0] - size[0]) / 2
-            y = (SCREEN_SIZE[1] - size[1]) / 2
-            self.screen.blit(font_surface, (x,y))
+class BrickController():
 
+    def __init__(self):
+        pass
 
-    def run(self):
-        while 1:
+    def controller_update_model(self,model):
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_LEFT]:
+            model.paddle.left -= 5
+            if model.paddle.left < 0:
+                model.paddle.left = 0
+
+        if keys[pygame.K_RIGHT]:
+            model.paddle.left += 5
+            if model.paddle.left > MAX_PADDLE_X:
+                model.paddle.left = MAX_PADDLE_X
+
+        if keys[pygame.K_SPACE] and model.state == STATE_BALL_IN_PADDLE:
+            model.ball_vel = [5,-5]
+            model.state = STATE_PLAYING
+        elif keys[pygame.K_RETURN] and (model.state == STATE_GAME_OVER or model.state == STATE_WON):
+            self.init_game()
+
+class BrickGame():
+
+    def __init__(self):
+        self.m = BrickModel()
+        self.v = BrickView()
+        self.c = BrickController()
+        self.clock = pygame.time.Clock()
+
+    def run_game(self):
+        game_over = False
+        while not game_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit
 
             self.clock.tick(50)
-            self.screen.fill(BLACK)
-            self.check_input()
-
-            if self.state == STATE_PLAYING:
-                self.move_ball()
-                self.handle_collisions()
-            elif self.state == STATE_BALL_IN_PADDLE:
-                self.ball.left = self.paddle.left + self.paddle.width / 2
-                self.ball.top  = self.paddle.top - self.ball.height
-                self.show_message("PRESS SPACE TO LAUNCH THE BALL")
-            elif self.state == STATE_GAME_OVER:
-                self.show_message("GAME OVER. PRESS ENTER TO PLAY AGAIN")
-            elif self.state == STATE_WON:
-                self.show_message("YOU WON! PRESS ENTER TO PLAY AGAIN")
-
-            self.draw_bricks()
-
-            # Draw paddle
-            pygame.draw.rect(self.screen, BLUE, self.paddle)
-
-            # Draw ball
-            pygame.draw.circle(self.screen, WHITE, (self.ball.left + BALL_RADIUS, self.ball.top + BALL_RADIUS), BALL_RADIUS)
-
-            self.show_stats()
-
-            pygame.display.flip()
+            self.v.fill_screen(BLACK)
+            self.c.controller_update_model(self.m)
+            display_msg,game_over = self.m.check_states()
+            self.v.show_message(display_msg)
+            self.v.draw_brick_paddle_ball(self.m)
+        self.v.kill_game()
 
 if __name__ == "__main__":
-    Bricka().run()
+    b = BrickGame()
+    b.run_game()
