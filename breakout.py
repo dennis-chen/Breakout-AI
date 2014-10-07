@@ -80,6 +80,14 @@ class Ball(pygame.sprite.Sprite):
         self.direction = (180 - self.direction) % 360
         self.direction -= diff
 
+    def bounce_off_paddle(self,diff,player):
+        """ This function will bounce the ball
+            off a paddle."""
+        self.rect.y = self.screenheight - self.height - player.height - 1
+        self.direction = (180 - self.direction) % 360
+        self.direction -= diff
+        print diff
+
     def update(self):
         """ Update the position of the ball. """
         # Sine and Cosine work in degrees, so we have to convert them
@@ -140,12 +148,9 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         """ Update the player position. """
-        # Get where the mouse is
-        move_dist = self.AI.get_next_move()
-        # Set the left side of the player bar to the mouse position
+        #move_dist = self.AI.get_random_next_move()
+        move_dist = self.AI.follow_ball()
         self.rect.x += move_dist
-        # Make sure we don't push the player paddle
-        # off the right side of the screen
         if self.rect.x > self.screenwidth - self.width:
             self.rect.x = self.screenwidth - self.width
 
@@ -247,14 +252,11 @@ while exit_program != True:
         # Set the ball's y position in case
         # we hit the ball on the edge of the paddle
         ball.rect.y = screen.get_height() - player.rect.height - ball.rect.height - 1
-        ball.bounce(diff)
+        ball.bounce_off_paddle(diff,player)
+        #ball.bounce(diff)
 
     # Check for collisions between the ball and the blocks
     deadblocks = pygame.sprite.spritecollide(ball, blocks, True)
-    #print len(blocks)
-    print type(blocks)
-    print blocks.sprites()[0].rect.x
-    print blocks.sprites()[0].rect.y
 
     # If we actually hit a block, bounce the ball
     if len(deadblocks) > 0:

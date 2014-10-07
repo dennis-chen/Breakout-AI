@@ -2,11 +2,15 @@ import random
 
 class AI():
     """AI for breakout game"""
+
     def __init__(self,player,ball,blocks):
         self.player = player
         self.ball = ball
         self.blocks = blocks
-        self.max_speed = 1
 
-    def get_next_move(self):
-        return random.randint(-1*self.max_speed,self.max_speed)
+    def get_random_next_move(self):
+        return random.randint(0,5)
+
+    def follow_ball(self):
+        dist_to_ball = self.ball.rect.x - self.player.rect.x
+        return int(dist_to_ball)
