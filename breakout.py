@@ -1,5 +1,6 @@
 import math
 import pygame
+from AI import AI
 
 # Define some colors
 black = (0, 0, 0)
@@ -79,6 +80,7 @@ class Ball(pygame.sprite.Sprite):
         self.direction = (180 - self.direction) % 360
         self.direction -= diff
 
+
     def update(self):
         """ Update the position of the ball. """
         # Sine and Cosine work in degrees, so we have to convert them
@@ -134,12 +136,17 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 0
         self.rect.y = self.screenheight-self.height
 
+    def init_AI(self, ball, blocks):
+        self.AI = AI(self, ball, blocks)
+
     def update(self):
         """ Update the player position. """
         # Get where the mouse is
-        pos = pygame.mouse.get_pos()
-        # Set the left side of the player bar to the mouse position
-        self.rect.x = pos[0]
+        pos = self.AI.follow_the_ball()
+
+        self.rect.x += pos
+        # Set the left selfide of the player bar to the mouse position
+
         # Make sure we don't push the player paddle
         # off the right side of the screen
         if self.rect.x > self.screenwidth - self.width:
@@ -202,9 +209,10 @@ clock = pygame.time.Clock()
 # Is the game over?
 game_over = False
 
-# Exit the program?
+# Exit the program? 
 exit_program = False
 
+player.init_AI(ball,blocks)
 # Main program loop
 while exit_program != True:
 
