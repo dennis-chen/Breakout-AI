@@ -1,10 +1,10 @@
 """
  bricka (a breakout clone)
  Developed by Leonel Machava <leonelmachava@gmail.com>
+ Super heavily modified and put into MVC by Dennis & Fillippos
 
  http://codeNtronix.com
 """
-import sys
 import pygame
 from AI import AI
 
@@ -12,7 +12,7 @@ SCREEN_SIZE   = 640,480
 
 # Object dimensions
 BRICK_WIDTH   = 60
-BRICK_HEIGHT  = 15
+BRICK_HEIGHT  = 20
 PADDLE_WIDTH  = 60
 PADDLE_HEIGHT = 12
 BALL_DIAMETER = 16
@@ -90,7 +90,7 @@ class BrickModel:
         self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
         self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
         self.ball_vel = [5,-5]
-        self.create_bricks(35,35,5,5)
+        self.create_bricks(35,35,1,1)
 
     def create_bricks(self,i_x_ofs,i_y_ofs,x_spacing,y_spacing):
         y_ofs = i_y_ofs
@@ -116,9 +116,6 @@ class BrickModel:
         if self.ball.top < 0:
             self.ball.top = 0
             self.ball_vel[1] = -self.ball_vel[1]
-        elif self.ball.top >= MAX_BALL_Y:
-            self.ball.top = MAX_BALL_Y
-            self.ball_vel[1] = -self.ball_vel[1]
 
     def handle_collisions(self):
         for brick in self.bricks:
@@ -126,6 +123,7 @@ class BrickModel:
                 self.score += 3
                 self.ball_vel[1] = -self.ball_vel[1]
                 self.bricks.remove(brick)
+                print "breaking!"
                 break
 
         if len(self.bricks) == 0:
