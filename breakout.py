@@ -198,7 +198,7 @@ class BrickGame():
         while not game_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    sys.exit
+                    self.v.kill_game()
 
             self.clock.tick(50)
             self.v.fill_screen(BLACK)
