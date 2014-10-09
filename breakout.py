@@ -1,291 +1,213 @@
-from AI import AI
-import math
+"""
+ bricka (a breakout clone)
+ Developed by Leonel Machava <leonelmachava@gmail.com>
+ Super heavily modified and put into MVC by Dennis & Fillippos
+
+ http://codeNtronix.com
+"""
 import pygame
 from AI import AI
 
-# Define some colors
-black = (0, 0, 0)
-white = (255, 255, 255)
-blue = (0, 0, 255)
+SCREEN_SIZE   = 640,480
 
-# Size of break-out blocks
-block_width = 23
-block_height = 15
+# Object dimensions
+BRICK_WIDTH   = 60
+BRICK_HEIGHT  = 20
+PADDLE_WIDTH  = 60
+PADDLE_HEIGHT = 12
+BALL_DIAMETER = 16
+BALL_RADIUS   = BALL_DIAMETER / 2
 
-class Block(pygame.sprite.Sprite):
-    """This class represents each block that will get knocked out by the ball
-    It derives from the "Sprite" class in Pygame """
+MAX_PADDLE_X = SCREEN_SIZE[0] - PADDLE_WIDTH
+MAX_BALL_X   = SCREEN_SIZE[0] - BALL_DIAMETER
+MAX_BALL_Y   = SCREEN_SIZE[1] - BALL_DIAMETER
 
-    def __init__(self, color, x, y):
-        """ Constructor. Pass in the color of the block,
-            and its x and y position. """
+# Paddle Y coordinate
+PADDLE_Y = SCREEN_SIZE[1] - PADDLE_HEIGHT - 10
 
-        # Call the parent class (Sprite) constructor
-        pygame.sprite.Sprite.__init__(self)
+# Color constants
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+BLUE  = (0,0,255)
+BRICK_COLOR = (200,200,0)
 
-        # Create the image of the block of appropriate size
-        # The width and height are sent as a list for the first parameter.
-        self.image = pygame.Surface([block_width, block_height])
+# State constants
+STATE_BALL_IN_PADDLE = 0
+STATE_PLAYING = 1
+STATE_WON = 2
+STATE_GAME_OVER = 3
 
-        # Fill the image with the appropriate color
-        self.image.fill(color)
+class BrickView:
 
-        # Fetch the rectangle object that has the dimensions of the image
-        self.rect = self.image.get_rect()
-
-        # Move the top left of the rectangle to x,y.
-        # This is where our block will appear..
-        self.rect.x = x
-        self.rect.y = y
-
-
-class Ball(pygame.sprite.Sprite):
-    """ This class represents the ball
-        It derives from the "Sprite" class in Pygame """
-
-    # Speed in pixels per cycle
-    speed = 10.0
-
-    # Floating point representation of where the ball is
-    x = 0.0
-    y = 180.0
-
-    # Direction of ball (in degrees)
-    direction = 200
-
-    width = 10
-    height = 10
-
-    # Constructor. Pass in the color of the block, and its x and y position
     def __init__(self):
-        # Call the parent class (Sprite) constructor
-        pygame.sprite.Sprite.__init__(self)
-
-        # Create the image of the ball
-        self.image = pygame.Surface([self.width, self.height])
-
-        # Color the ball
-        self.image.fill(white)
-
-        # Get a rectangle object that shows where our image is
-        self.rect = self.image.get_rect()
-
-        # Get attributes for the height/width of the screen
-        self.screenheight = pygame.display.get_surface().get_height()
-        self.screenwidth = pygame.display.get_surface().get_width()
-
-    def bounce(self, diff):
-        """ This function will bounce the ball
-            off a horizontal surface (not a vertical one) """
-
-        self.direction = (180 - self.direction) % 360
-        self.direction -= diff
-
-    def bounce_off_paddle(self,diff,player):
-        """ This function will bounce the ball
-            off a paddle."""
-        self.rect.y = self.screenheight - self.height - player.height - 1
-        self.direction = (180 - self.direction) % 360
-        self.direction -= diff
-        print diff
-
-    def update(self):
-        """ Update the position of the ball. """
-        # Sine and Cosine work in degrees, so we have to convert them
-        direction_radians = math.radians(self.direction)
-
-        # Change the position (x and y) according to the speed and direction
-        self.x += self.speed * math.sin(direction_radians)
-        self.y -= self.speed * math.cos(direction_radians)
-
-        # Move the image to where our x and y are
-        self.rect.x = self.x
-        self.rect.y = self.y
-
-        # Do we bounce off the top of the screen?
-        if self.y <= 0:
-            self.bounce(0)
-            self.y = 1
-
-        # Do we bounce off the left of the screen?
-        if self.x <= 0:
-            self.direction = (360 - self.direction) % 360
-            self.x = 1
-
-        # Do we bounce of the right side of the screen?
-        if self.x > self.screenwidth - self.width:
-            self.direction = (360 - self.direction) % 360
-            self.x = self.screenwidth - self.width - 1
-
-        # Did we fall off the bottom edge of the screen?
-        if self.y > 600:
-            return True
+        pygame.init()
+        self.screen = pygame.display.set_mode(SCREEN_SIZE)
+        pygame.display.set_caption("bricka (a breakout clone by codeNtronix.com)")
+        if pygame.font:
+            self.font = pygame.font.Font(None,30)
         else:
-            return False
+            self.font = None
 
-class Player(pygame.sprite.Sprite):
-    """ This class represents the bar at the bottom that the player controls. """
+    def show_stats(self,model):
+        if self.font:
+            font_surface = self.font.render("SCORE: " + str(model.score) + " LIVES: " + str(model.lives), False, WHITE)
+            self.screen.blit(font_surface, (205,5))
+
+    def show_message(self,message):
+        if message is None:
+            return
+        if self.font:
+            size = self.font.size(message)
+            font_surface = self.font.render(message,False, WHITE)
+            x = (SCREEN_SIZE[0] - size[0]) / 2
+            y = (SCREEN_SIZE[1] - size[1]) / 2
+            self.screen.blit(font_surface, (x,y))
+
+    def fill_screen(self,color):
+        self.screen.fill(color)
+
+    def draw_brick_paddle_ball(self,model):
+        # Draw paddle
+        pygame.draw.rect(self.screen, BLUE, model.paddle)
+        # Draw ball
+        pygame.draw.circle(self.screen, WHITE, (model.ball.left + BALL_RADIUS, model.ball.top + BALL_RADIUS), BALL_RADIUS)
+        # Draw bricks
+        for brick in model.bricks:
+            pygame.draw.rect(self.screen, BRICK_COLOR, brick)
+
+        self.show_stats(model)
+        pygame.display.flip()
+
+    def kill_game(self):
+        pygame.quit()
+
+class BrickModel:
 
     def __init__(self):
-        """ Constructor for Player. """
-        # Call the parent's constructor
-        pygame.sprite.Sprite.__init__(self)
+        self.lives = 1
+        self.score = 0
+        self.state = STATE_PLAYING
+        self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
+        self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
+        self.ball_vel = [5,5]
+        self.create_bricks(35,35,1,1)
+        self.brick_width = BRICK_WIDTH
+        self.brick_height = BRICK_HEIGHT
+        self.paddle_width = PADDLE_WIDTH
+        self.paddle_height = PADDLE_HEIGHT
+        self.ball_diameter = BALL_DIAMETER
 
-        self.width = 75
-        self.height = 15
-        self.image = pygame.Surface([self.width, self.height])
-        self.image.fill((white))
+    def create_bricks(self,i_x_ofs,i_y_ofs,x_spacing,y_spacing):
+        y_ofs = i_y_ofs
+        self.bricks = []
+        for i in range(7):
+            x_ofs = i_x_ofs
+            for j in range(8):
+                self.bricks.append(pygame.Rect(x_ofs,y_ofs,BRICK_WIDTH,BRICK_HEIGHT))
+                x_ofs += BRICK_WIDTH + x_spacing
+            y_ofs += BRICK_HEIGHT + y_spacing
 
-        # Make our top-left corner the passed-in location.
-        self.rect = self.image.get_rect()
-        self.screenheight = pygame.display.get_surface().get_height()
-        self.screenwidth = pygame.display.get_surface().get_width()
+    def move_ball(self):
+        self.ball.left += self.ball_vel[0]
+        self.ball.top  += self.ball_vel[1]
+        #check left and right wall collisions
+        if self.ball.left <= 0:
+            self.ball.left = 0
+            self.ball_vel[0] = -self.ball_vel[0]
+        elif self.ball.left >= MAX_BALL_X:
+            self.ball.left = MAX_BALL_X
+            self.ball_vel[0] = -self.ball_vel[0]
+        #check top and bottom collisions? is the bottom collision check useless?
+        if self.ball.top < 0:
+            self.ball.top = 0
+            self.ball_vel[1] = -self.ball_vel[1]
 
-        self.rect.x = 0
-        self.rect.y = self.screenheight-self.height
+    def handle_collisions(self):
+        for brick in self.bricks:
+            if self.ball.colliderect(brick):
+                self.score += 3
+                self.ball_vel[1] = -self.ball_vel[1]
+                self.bricks.remove(brick)
+                break
 
-    def init_AI(self, ball, blocks):
-        self.AI = AI(self, ball, blocks)
+        if len(self.bricks) == 0:
+            self.state = STATE_WON
 
-    def update(self):
-        """ Update the player position. """
-        # Get where the mouse is
-        pos = self.AI.follow_the_ball()
+        if self.ball.colliderect(self.paddle):
+            self.ball.top = PADDLE_Y - BALL_DIAMETER
+            self.ball_vel[1] = -self.ball_vel[1]
+        elif self.ball.top > self.paddle.top:
+            self.lives -= 1
+            if self.lives > 0:
+                self.state = STATE_BALL_IN_PADDLE
+            else:
+                self.state = STATE_GAME_OVER
 
-        self.rect.x += pos
-        # Set the left selfide of the player bar to the mouse position
+    def check_states(self):
+        display_msg = None
+        if self.state == STATE_PLAYING:
+            self.move_ball()
+            self.handle_collisions()
+        elif self.state == STATE_BALL_IN_PADDLE:
+            self.ball.left = self.paddle.left + self.paddle.width / 2
+            self.ball.top  = self.paddle.top - self.ball.height
+            display_msg = "PRESS SPACE TO LAUNCH THE BALL"
+        elif self.state == STATE_GAME_OVER:
+            display_msg = "GAME OVER. PRESS ENTER TO PLAY AGAIN"
+        elif self.state == STATE_WON:
+            display_msg = "YOU WON! PRESS ENTER TO PLAY AGAIN"
+        return display_msg, self.state == STATE_GAME_OVER
 
-        # Make sure we don't push the player paddle
-        # off the right side of the screen
-    def init_AI(self,ball,blocks):
-        self.AI = AI(self,ball,blocks)
+class BrickController():
 
-    def update(self):
-        """ Update the player position. """
-        #move_dist = self.AI.get_random_next_move()
-        move_dist = self.AI.follow_ball()
-        self.rect.x += move_dist
+    def __init__(self):
+        self.ai = AI()
 
-        if self.rect.x > self.screenwidth - self.width:
-            self.rect.x = self.screenwidth - self.width
+    def ai_update_model(self,model):
+        self.ai.follow_ball(model)
 
-# Call this function so the Pygame library can initialize itself
-pygame.init()
+    def controller_update_model(self,model):
+        keys = pygame.key.get_pressed()
 
-# Create an 800x600 sized screen
-screen = pygame.display.set_mode([800, 600])
+        if keys[pygame.K_LEFT]:
+            model.paddle.left -= 5
+            if model.paddle.left < 0:
+                model.paddle.left = 0
 
-# Set the title of the window
-pygame.display.set_caption('Breakout')
+        if keys[pygame.K_RIGHT]:
+            model.paddle.left += 5
+            if model.paddle.left > MAX_PADDLE_X:
+                model.paddle.left = MAX_PADDLE_X
 
-# Enable this to make the mouse disappear when over our window
-pygame.mouse.set_visible(0)
+        if keys[pygame.K_SPACE] and model.state == STATE_BALL_IN_PADDLE:
+            model.ball_vel = [5,-5]
+            model.state = STATE_PLAYING
+        elif keys[pygame.K_RETURN] and (model.state == STATE_GAME_OVER or model.state == STATE_WON):
+            self.init_game()
 
-# This is a font we use to draw text on the screen (size 36)
-font = pygame.font.Font(None, 36)
+class BrickGame():
 
-# Create a surface we can draw on
-background = pygame.Surface(screen.get_size())
+    def __init__(self):
+        self.m = BrickModel()
+        self.v = BrickView()
+        self.c = BrickController()
+        self.clock = pygame.time.Clock()
 
-# Create sprite lists
-blocks = pygame.sprite.Group()
-balls = pygame.sprite.Group()
-allsprites = pygame.sprite.Group()
+    def run_game(self):
+        game_over = False
+        while not game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit
 
-# Create the player paddle object
-player = Player()
-allsprites.add(player)
+            self.clock.tick(50)
+            self.v.fill_screen(BLACK)
+            self.c.ai_update_model(self.m)
+            display_msg,game_over = self.m.check_states()
+            self.v.show_message(display_msg)
+            self.v.draw_brick_paddle_ball(self.m)
+        self.v.kill_game()
 
-# Create the ball
-ball = Ball()
-allsprites.add(ball)
-balls.add(ball)
-
-# The top of the block (y position)
-top = 80
-
-# Number of blocks to create
-blockcount = 32
-
-# --- Create blocks
-
-# Five rows of blocks
-for row in range(5):
-    # 32 columns of blocks
-    for column in range(0, blockcount):
-        # Create a block (color,x,y)
-        block = Block(blue, column * (block_width + 2) + 1, top)
-        blocks.add(block)
-        allsprites.add(block)
-    # Move the top of the next row down
-    top += block_height + 2
-
-# Clock to limit speed
-clock = pygame.time.Clock()
-
-# Is the game over?
-game_over = False
-
-# Exit the program? 
-exit_program = False
-
-player.init_AI(ball,blocks)
-# Main program loop
-player.init_AI(ball,blocks)
-while exit_program != True:
-
-    # Limit to 30 fps
-    clock.tick(30)
-
-    # Clear the screen
-    screen.fill(black)
-
-    # Process the events in the game
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            exit_program = True
-
-    # Update the ball and player position as long
-    # as the game is not over.
-    if not game_over:
-        # Update the player and ball positions
-        player.update()
-        game_over = ball.update()
-
-    # If we are done, print game over
-    if game_over:
-        text = font.render("Game Over", True, white)
-        textpos = text.get_rect(centerx=background.get_width()/2)
-        textpos.top = 300
-        screen.blit(text, textpos)
-
-    # See if the ball hits the player paddle
-    if pygame.sprite.spritecollide(player, balls, False):
-        # The 'diff' lets you try to bounce the ball left or right
-        # depending where on the paddle you hit it
-        diff = (player.rect.x + player.width/2) - (ball.rect.x+ball.width/2)
-
-        # Set the ball's y position in case
-        # we hit the ball on the edge of the paddle
-        ball.rect.y = screen.get_height() - player.rect.height - ball.rect.height - 1
-        ball.bounce_off_paddle(diff,player)
-        #ball.bounce(diff)
-
-    # Check for collisions between the ball and the blocks
-    deadblocks = pygame.sprite.spritecollide(ball, blocks, True)
-
-    # If we actually hit a block, bounce the ball
-    if len(deadblocks) > 0:
-        ball.bounce(0)
-
-        # Game ends if all the blocks are gone
-        if len(blocks) == 0:
-            game_over = True
-
-    # Draw Everything
-    allsprites.draw(screen)
-
-    # Flip the screen and show what we've drawn
-    pygame.display.flip()
-
-pygame.quit()
+if __name__ == "__main__":
+    b = BrickGame()
+    b.run_game()
