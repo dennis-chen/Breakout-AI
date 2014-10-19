@@ -8,7 +8,7 @@
 import pygame
 from AI import AI
 
-SCREEN_SIZE   = 640,480
+SCREEN_SIZE   = 480,480
 
 # Object dimensions
 BRICK_WIDTH   = 60
@@ -51,7 +51,7 @@ class BrickView:
     def show_stats(self,model):
         if self.font:
             font_surface = self.font.render("SCORE: " + str(model.score) + " LIVES: " + str(model.lives), False, WHITE)
-            self.screen.blit(font_surface, (205,5))
+            self.screen.blit(font_surface, (150,5))
 
     def show_message(self,message):
         if message is None:
@@ -90,7 +90,7 @@ class BrickModel:
         self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
         self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
         self.ball_vel = [5,5]
-        self.create_bricks(35,35,1,1)
+        self.create_bricks(0,0,1,1)
         self.brick_width = BRICK_WIDTH
         self.brick_height = BRICK_HEIGHT
         self.paddle_width = PADDLE_WIDTH
@@ -122,6 +122,12 @@ class BrickModel:
             self.ball.top = 0
             self.ball_vel[1] = -self.ball_vel[1]
 
+    def check_paddle_collisions(self):
+        if self.paddle.left < 0:
+            self.paddle.left = 0
+        if self.paddle.left > MAX_PADDLE_X:
+            self.paddle.left = MAX_PADDLE_X
+
     def handle_collisions(self):
 
         for brick in self.bricks:
@@ -135,6 +141,7 @@ class BrickModel:
             self.state = STATE_WON
 
         if self.ball.colliderect(self.paddle):
+<<<<<<< HEAD
 
             ball_x_mindpoint = self.ball.left + BALL_DIAMETER/2
             paddle_x_midpoint = self.ball.left + PADDLE_WIDTH/2
@@ -144,12 +151,21 @@ class BrickModel:
             self.ball.top = PADDLE_Y - BALL_DIAMETER
             self.ball_vel[0] -= distance_between_midpoints
             self.ball_vel[1] = distance_between_midpoints
+=======
+            ball_x = self.ball.left + BALL_DIAMETER/2
+            paddle_x = self.paddle.left + PADDLE_WIDTH/2
+            dist_along_paddle = ball_x - paddle_x
+            self.ball.top = PADDLE_Y - BALL_DIAMETER
+            self.ball_vel[1] = -self.ball_vel[1]
+            self.ball_vel[0] = dist_along_paddle/3
+>>>>>>> d05890460775aa52ac4637c6d921b200fc90c114
         elif self.ball.top > self.paddle.top:
             self.lives -= 1
             if self.lives > 0:
                 self.state = STATE_BALL_IN_PADDLE
             else:
                 self.state = STATE_GAME_OVER
+        self.check_paddle_collisions()
 
     def check_states(self):
         display_msg = None
@@ -206,11 +222,12 @@ class BrickGame():
         while not game_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    sys.exit
+                    self.v.kill_game()
 
             self.clock.tick(50)
             self.v.fill_screen(BLACK)
             self.c.ai_update_model(self.m)
+            #self.c.controller_update_model(self.m)
             display_msg,game_over = self.m.check_states()
             self.v.show_message(display_msg)
             self.v.draw_brick_paddle_ball(self.m)
