@@ -15,7 +15,6 @@ ALPHA = 0.7
 LAMBDA = 1
 
 class AI():
-
     def __init__(self,model):
         self.q_matrix = np.zeros((TOTAL_STATES,TOTAL_ACTIONS))
         self.last_action = 5
@@ -28,6 +27,8 @@ class AI():
         paddle_x = model.paddle.left + model.paddle_width/2
         ball_x = model.ball.left + model.ball_diameter/2
         dist_to_ball = ball_x - paddle_x
+        paddle_x_vel = dist_to_ball
+
         try: direction_to_ball = dist_to_ball/abs(dist_to_ball)
         except: direction_to_ball = 0 #catch divide by zero error
         paddle_x_magnitude = min(abs(dist_to_ball/5),MAX_X_VEL)
