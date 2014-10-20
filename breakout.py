@@ -11,7 +11,7 @@ from AI import AI
 SCREEN_SIZE   = 480,480
 
 # Object dimensions
-BRICK_WIDTH   = 60
+BRICK_WIDTH   = 120
 BRICK_HEIGHT  = 20
 PADDLE_WIDTH  = 60
 PADDLE_HEIGHT = 12
@@ -90,20 +90,26 @@ class BrickModel:
         self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
         self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
         self.ball_vel = [5,5]
-        self.create_bricks(0,0,1,1)
+        self.x_num_bricks = 4
+        self.y_num_bricks = 4
+        self.create_bricks(0,0,1,1,self.y_num_bricks,self.x_num_bricks)
         self.brick_width = BRICK_WIDTH
         self.brick_height = BRICK_HEIGHT
         self.paddle_width = PADDLE_WIDTH
         self.paddle_height = PADDLE_HEIGHT
         self.ball_diameter = BALL_DIAMETER
+        self.SCREEN_SIZE = SCREEN_SIZE
 
-    def create_bricks(self,i_x_ofs,i_y_ofs,x_spacing,y_spacing):
+    def create_bricks(self,i_x_ofs,i_y_ofs,x_spacing,y_spacing,y_num_bricks,x_num_bricks):
         y_ofs = i_y_ofs
         self.bricks = []
-        for i in range(7):
+        self.brick_cols = [[],[],[],[]]
+        for i in range(y_num_bricks):
             x_ofs = i_x_ofs
-            for j in range(8):
-                self.bricks.append(pygame.Rect(x_ofs,y_ofs,BRICK_WIDTH,BRICK_HEIGHT))
+            for j in range(x_num_bricks):
+                brick = pygame.Rect(x_ofs,y_ofs,BRICK_WIDTH,BRICK_HEIGHT)
+                self.bricks.append(brick)
+                self.brick_cols[j].append(brick)
                 x_ofs += BRICK_WIDTH + x_spacing
             y_ofs += BRICK_HEIGHT + y_spacing
 
@@ -135,6 +141,7 @@ class BrickModel:
                 self.score += 3
                 self.ball_vel[1] = -self.ball_vel[1]
                 self.bricks.remove(brick)
+                self.brick_cols.remove(brick)
                 break
 
         if len(self.bricks) == 0:
@@ -225,7 +232,6 @@ class BrickGame():
             self.clock.tick(50)
             self.v.fill_screen(BLACK)
             self.c.ai_update_model(self.m)
-            #self.c.controller_update_model(self.m)
             display_msg,game_over = self.m.check_states()
             self.v.show_message(display_msg)
             self.v.draw_brick_paddle_ball(self.m)
