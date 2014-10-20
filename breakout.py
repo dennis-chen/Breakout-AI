@@ -86,6 +86,7 @@ class BrickModel:
     def __init__(self):
         self.lives = 1
         self.score = 0
+        self.score_change = 0
         self.state = STATE_PLAYING
         self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
         self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
@@ -136,13 +137,16 @@ class BrickModel:
 
     def handle_collisions(self):
         for brick in self.bricks:
+            self.score_change = 0
             if self.ball.colliderect(brick):
                 self.score += 3
+                self.score_change = 3
                 self.ball_vel[1] = -self.ball_vel[1]
                 self.bricks.remove(brick)
-                self.brick_cols.remove(brick)
-                break
-
+                for brick_col in self.brick_cols:
+                    if brick in brick_col:
+                        brick_col.remove(brick)
+                break #so you can only break one brick at once
         if len(self.bricks) == 0:
             self.state = STATE_WON
 
@@ -178,11 +182,12 @@ class BrickModel:
 
 class BrickController():
 
-    def __init__(self):
-        self.ai = AI()
+    def __init__(self,model):
+        self.ai = AI(model)
 
     def ai_update_model(self,model):
-        self.ai.follow_ball(model)
+        #self.ai.follow_ball(model)
+        self.ai.make_qlearn_move(model)
 
     def controller_update_model(self,model):
         keys = pygame.key.get_pressed()
@@ -208,7 +213,7 @@ class BrickGame():
     def __init__(self):
         self.m = BrickModel()
         self.v = BrickView()
-        self.c = BrickController()
+        self.c = BrickController(self.m)
         self.clock = pygame.time.Clock()
 
     def run_game(self):
@@ -222,6 +227,9 @@ class BrickGame():
             self.v.fill_screen(BLACK)
             self.c.ai_update_model(self.m)
             display_msg,game_over = self.m.check_states()
+            #check_states() updates the model based on move made by AI
+            reward,new_state = self.c.ai.observe_reward(self.m)
+            self.c.ai.update_q(self.m,reward,new_state)
             self.v.show_message(display_msg)
             self.v.draw_brick_paddle_ball(self.m)
         self.v.kill_game()

@@ -1,20 +1,25 @@
 import random
 import numpy as np
 
+STATE_GAME_OVER = 3
 MAX_X_VEL = 5
 
 NUM_PADDLE_X_STATES = 8
 NUM_BALL_X_STATES = 8
 NUM_BALL_Y_STATES = 4
 NUM_BRICK_STATES = 16
-TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BRICK_STATES*NUM_ACTIONS
 TOTAL_ACTIONS = 11
+TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BRICK_STATES*TOTAL_ACTIONS
+
+ALPHA = 0.7
+LAMBDA = 1
 
 class AI():
 
-    def __init__(self):
-        self.q_matrix = np.zeros(TOTAL_STATES+1,TOTAL_ACTIONS)
-        self.q_matrix[TOTAL_STATES,:] = -10000
+    def __init__(self,model):
+        self.q_matrix = np.zeros((TOTAL_STATES,TOTAL_ACTIONS))
+        self.last_action = 5
+        self.last_state = self.convert_model_info_to_state(model)
 
     def get_random_next_move(self):
         return random.randint(0,5)
@@ -29,19 +34,54 @@ class AI():
         paddle_x_vel = direction_to_ball*paddle_x_magnitude
         model.paddle.left += paddle_x_vel
 
-    def get_qlearn_move(self,model):
-        game_state = convert_model_info_to_state(model)
+    def update_q(self,model,reward,new_state):
         q = self.q_matrix
-        best_action = find_max_reward(q,game_state)
-        best_paddle_vel = best_action - 5
-        model.paddle.left += paddle_x_vel
+        q[self.last_state,self.last_action] += ALPHA*(reward+LAMBDA*self.find_max_reward(q,new_state)-q[self.last_state,self.last_action])
 
-    def find_max_reward(q,game_state):
+    def make_qlearn_move(self,model):
+        q = self.q_matrix
+        game_state = self.convert_model_info_to_state(model)
+        self.last_state = game_state
+        best_action_list = self.find_best_action(q,game_state)
+        best_action = random.choice(best_action_list)
+        print best_action
+        self.make_best_action(best_action,model)
+        self.last_action = best_action
+
+    def make_best_action(self,best_action,model):
+        best_paddle_vel = best_action - 5
+        model.paddle.left += best_paddle_vel
+        self.last_action = best_action
+
+    def observe_reward(self,model):
+        reward = self.score_model(model)
+        new_state = self.convert_model_info_to_state(model)
+        return reward,new_state
+
+    def score_model(self,model):
+        if model.state == STATE_GAME_OVER:
+            return -10000
+        else:
+            return model.score_change
+
+    def find_max_reward(self,q,game_state):
         state_row = q[game_state,:]
-        return state_row.argmax()
+        return state_row[state_row.argmax()]
+
+    def find_best_action(self,q,game_state):
+        state_row = q[game_state,:]
+        max_reward = [-99999999999999999999999999999]
+        max_reward_indices = [None]
+        for i, reward in enumerate(state_row):
+            if reward > max_reward[0]:
+                max_reward = [reward]
+                max_reward_indices = [i]
+            elif reward == max_reward[0]:
+                max_reward_indices.append(i)
+        return max_reward_indices
 
     def convert_model_info_to_state(self,model):
-        if model.state = STATE_GAME_OVER:
+        if model.state == STATE_GAME_OVER:
             return TOTAL_STATES
         brick_state = self.get_brick_state(model)
         paddle_state = self.get_paddle_state(model)
