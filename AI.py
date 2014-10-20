@@ -45,7 +45,6 @@ class AI():
         self.last_state = game_state
         best_action_list = self.find_best_action(q,game_state)
         best_action = random.choice(best_action_list)
-        print best_action
         self.make_best_action(best_action,model)
         self.last_action = best_action
 
@@ -57,6 +56,8 @@ class AI():
     def observe_reward(self,model):
         reward = self.score_model(model)
         new_state = self.convert_model_info_to_state(model)
+        print "observe reward"
+        print new_state
         return reward,new_state
 
     def score_model(self,model):
@@ -82,11 +83,9 @@ class AI():
         return max_reward_indices
 
     def convert_model_info_to_state(self,model):
-        if model.state == STATE_GAME_OVER:
-            return TOTAL_STATES
         brick_state = self.get_brick_state(model)
         paddle_state = self.get_paddle_state(model)
-        ball_state = self.get_paddle_state(model)
+        ball_state = self.get_ball_state(model)
         brick_and_paddle_state = brick_state*NUM_PADDLE_X_STATES+paddle_state
         game_state = brick_and_paddle_state*NUM_BALL_X_STATES*NUM_BALL_Y_STATES + ball_state
         return game_state

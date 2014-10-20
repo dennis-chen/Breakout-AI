@@ -90,7 +90,7 @@ class BrickModel:
         self.state = STATE_PLAYING
         self.paddle   = pygame.Rect(300,PADDLE_Y,PADDLE_WIDTH,PADDLE_HEIGHT)
         self.ball     = pygame.Rect(300,PADDLE_Y - BALL_DIAMETER,BALL_DIAMETER,BALL_DIAMETER)
-        self.ball_vel = [5,5]
+        self.ball_vel = [-5,-5]
         self.x_num_bricks = 4
         self.y_num_bricks = 4
         self.create_bricks(0,0,1,1,self.y_num_bricks,self.x_num_bricks)
