@@ -141,7 +141,6 @@ class BrickModel:
             self.state = STATE_WON
 
         if self.ball.colliderect(self.paddle):
-<<<<<<< HEAD
 
             ball_x_mindpoint = self.ball.left + BALL_DIAMETER/2
             paddle_x_midpoint = self.ball.left + PADDLE_WIDTH/2
@@ -151,14 +150,13 @@ class BrickModel:
             self.ball.top = PADDLE_Y - BALL_DIAMETER
             self.ball_vel[0] -= distance_between_midpoints
             self.ball_vel[1] = distance_between_midpoints
-=======
+
             ball_x = self.ball.left + BALL_DIAMETER/2
             paddle_x = self.paddle.left + PADDLE_WIDTH/2
             dist_along_paddle = ball_x - paddle_x
             self.ball.top = PADDLE_Y - BALL_DIAMETER
             self.ball_vel[1] = -self.ball_vel[1]
             self.ball_vel[0] = dist_along_paddle/3
->>>>>>> d05890460775aa52ac4637c6d921b200fc90c114
         elif self.ball.top > self.paddle.top:
             self.lives -= 1
             if self.lives > 0:
