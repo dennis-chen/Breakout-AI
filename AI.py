@@ -19,6 +19,7 @@ class AI():
         self.q_matrix = np.zeros((TOTAL_STATES,TOTAL_ACTIONS))
         self.last_action = 5
         self.last_state = self.convert_model_info_to_state(model)
+        self.random_move_frequency = 0.5
 
     def get_random_next_move(self):
         return random.randint(0,5)
@@ -43,10 +44,15 @@ class AI():
         q = self.q_matrix
         game_state = self.convert_model_info_to_state(model)
         self.last_state = game_state
-        best_action_list = self.find_best_action(q,game_state)
-        best_action = random.choice(best_action_list)
-        self.make_best_action(best_action,model)
-        self.last_action = best_action
+        if random.random < self.random_move_frequency:
+            best_action_list = self.find_best_action(q,game_state)
+            best_action = random.choice(best_action_list)
+            self.make_best_action(best_action,model)
+            self.last_action = best_action
+        else:
+            random_action = random.randint(0,10)
+            self.make_best_action(random_action,model)
+            self.last_action = random_action
 
     def make_best_action(self,best_action,model):
         best_paddle_vel = best_action - 5
@@ -56,21 +62,23 @@ class AI():
     def observe_reward(self,model):
         reward = self.score_model(model)
         new_state = self.convert_model_info_to_state(model)
-        print "observe reward"
-        print new_state
         return reward,new_state
 
     def score_model(self,model):
         if model.state == STATE_GAME_OVER:
             return -10000
         else:
-            return model.score_change
+            paddle_x = model.paddle.left + model.paddle_width/2
+            ball_x = model.ball.left + model.ball_diameter/2
+            dist_to_ball = abs(ball_x - paddle_x)
+            return (1.0/(dist_to_ball+1))*100
 
     def find_max_reward(self,q,game_state):
         state_row = q[game_state,:]
         return state_row[state_row.argmax()]
 
     def find_best_action(self,q,game_state):
+        """returns int between 0 and 10"""
         state_row = q[game_state,:]
         max_reward = [-99999999999999999999999999999]
         max_reward_indices = [None]
