@@ -224,8 +224,8 @@ class BrickController():
         else:
             self.ai = ai
 
-    def save_ai(self):
-        p.dump(self.ai, open("trained_ai.p","wb"))
+    def save_ai(self,file_name = "trained_ai.p"):
+        p.dump(self.ai, open(file_name,"wb"))
 
     def ai_update_model(self,model):
         #self.ai.follow_ball(model)
@@ -274,11 +274,12 @@ class BrickGame():
             self.v.draw_brick_paddle_ball(self.m)
         self.v.kill_game()
 
-    def train_ai(self):
+    def train_ai(self,ai_base_name):
+        num_deaths = 0
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.c.save_ai()
+                    self.c.save_ai(ai_base_name + "_final.p")
                     self.v.kill_game()
 
             #self.clock.tick()
@@ -291,6 +292,11 @@ class BrickGame():
             #self.v.show_message(display_msg)
             #self.v.draw_brick_paddle_ball(self.m)
             if game_over:
+                num_deaths += 1
+                print num_deaths
+                if num_deaths%10000 == 0:
+                    ai_name = ai_base_name + str(num_deaths) + ".p"
+                    self.c.save_ai(ai_name)
                 self.m.reset_game()
 
     def resume_training_ai(self,ai_file_name,random_move_rate):
@@ -336,6 +342,7 @@ class BrickGame():
 if __name__ == "__main__":
     b = BrickGame()
     #b.run_game()
-    #b.train_ai()
+    ai_base_name = "new_ai"
+    #b.train_ai(ai_base_name)
     #b.resume_training_ai("trained_ai.p",0)
-    b.test_ai("trained_ai.p")
+    b.test_ai("new_ai_final.p")

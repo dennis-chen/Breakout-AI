@@ -2,7 +2,7 @@ import random
 import numpy as np
 
 STATE_GAME_OVER = 3
-MAX_X_VEL = 5
+MAX_PADDLE_X_VEL = 5
 
 NUM_PADDLE_X_STATES = 32
 NUM_BALL_X_STATES = 32
@@ -15,16 +15,14 @@ TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BALL_
 print "total states: "+str(TOTAL_STATES)
 print "q matrix entries: "+str(TOTAL_STATES*TOTAL_ACTIONS)
 
-ALPHA = 0.7
-LAMBDA = 0.99
-
 class AI():
     def __init__(self,model):
         self.q_matrix = np.zeros((TOTAL_STATES,TOTAL_ACTIONS))
         self.last_action = 5
         self.last_state = self.convert_model_info_to_state(model)
         self.random_move_frequency = 0
-
+        self.ALPHA = 0.7
+        self.LAMBDA = 0.999
 
     def get_random_next_move(self):
         return random.randint(0,5)
@@ -37,13 +35,13 @@ class AI():
 
         try: direction_to_ball = dist_to_ball/abs(dist_to_ball)
         except: direction_to_ball = 0 #catch divide by zero error
-        paddle_x_magnitude = min(abs(dist_to_ball/5),MAX_X_VEL)
+        paddle_x_magnitude = min(abs(dist_to_ball/5),MAX_PADDLE_X_VEL)
         paddle_x_vel = direction_to_ball*paddle_x_magnitude
         model.paddle.left += paddle_x_vel
 
     def update_q(self,model,reward,new_state):
         q = self.q_matrix
-        q[self.last_state,self.last_action] += ALPHA*(reward+LAMBDA*self.find_max_reward(q,new_state)-q[self.last_state,self.last_action])
+        q[self.last_state,self.last_action] += self.ALPHA*(reward+self.LAMBDA*self.find_max_reward(q,new_state)-q[self.last_state,self.last_action])
         #print str(np.count_nonzero(q)) + "/" + str(TOTAL_STATES)
 
     def make_qlearn_move(self,model):
@@ -122,7 +120,7 @@ class AI():
         return paddle_state
 
     def get_ball_state(self,model):
-        """returns it between 0 and 255 that encodes location of the ball"""
+        """returns int between 0 and 255 that encodes location of the ball"""
         ball_x = model.ball.left + model.ball_diameter/2
         ball_y = model.ball.top + model.ball_diameter/2
         ball_moving_left = (model.ball_vel[0] == abs(model.ball_vel[0]))
@@ -130,7 +128,7 @@ class AI():
             ball_dir = 0
         else:
             ball_dir = 1
-        ball_speed = abs(model.ball_vel[0])-1 #ball speed between 0 and 7
+        #ball_speed = abs(model.ball_vel[0])-1 #ball speed between 0 and 7
         screen_width,screen_height = model.SCREEN_SIZE
         x_divisions = NUM_BALL_X_STATES
         y_divisions = NUM_BALL_Y_STATES
@@ -139,8 +137,8 @@ class AI():
         ball_x_state = ball_x/x_division_size
         ball_y_state = ball_y/y_division_size
         ball_position_state = x_divisions*ball_y_state+ball_x_state
-        ball_dir_and_position_state = ball_dir*x_divisions*y_divisions+ball_position_state
-        return ball_dir_and_position_state
+        ball_state = ball_dir*x_divisions*y_divisions+ball_position_state
+        return ball_state
         #final_ball_state = ball_dir_and_position_state + ball_speed*x_divisions*y_divisions*NUM_BALL_DIR_STATES
         #return final_ball_state
 
