@@ -43,7 +43,7 @@ class AI():
     def update_q(self,model,reward,new_state):
         q = self.q_matrix
         q[self.last_state,self.last_action] += ALPHA*(reward+LAMBDA*self.find_max_reward(q,new_state)-q[self.last_state,self.last_action])
-        print np.count_nonzero(q)
+        #print np.count_nonzero(q)
 
     def make_qlearn_move(self,model):
         q = self.q_matrix
@@ -73,13 +73,15 @@ class AI():
         if model.state == STATE_GAME_OVER:
             return -10000
         else:
-            paddle_x = model.paddle.left + model.paddle_width/2
-            ball_x = model.ball.left + model.ball_diameter/2
-            dist_to_ball = abs(ball_x - paddle_x)
+            #paddle_x = model.paddle.left + model.paddle_width/2
+            #ball_x = model.ball.left + model.ball_diameter/2
+            #dist_to_ball = abs(ball_x - paddle_x)
             #reward = (1.0/(dist_to_ball+1))*10000
-            reward = -dist_to_ball
-            reward += model.score_change
+            #reward = -dist_to_ball
+            #reward += model.score_change
             #print reward
+            #reward = model.score_change
+            reward = -4+model.score_change
             return reward
 
     def find_max_reward(self,q,game_state):

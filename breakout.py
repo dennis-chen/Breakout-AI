@@ -185,9 +185,11 @@ class BrickModel:
             self.ball_vel[1] = -self.ball_vel[1]
             #self.ball_vel[0] = dist_along_paddle/3
             if (ball_x - paddle_x) == 0:
-                self.ball_vel[0] = random.choice([0.1,-0.1])
+                self.ball_vel[0] = random.choice([0.2,-0.2])
+                #never allow the paddle to hit the ball straight
             else:
                 self.ball_vel[0] = abs(self.ball_vel[0])*direction_to_bounce
+
         elif self.ball.top > self.paddle.top:
             self.lives -= 1
             if self.lives > 0:
@@ -195,6 +197,7 @@ class BrickModel:
             else:
                 self.state = STATE_GAME_OVER
         self.check_paddle_collisions()
+        print self.ball_vel
 
     def check_states(self):
         display_msg = None
@@ -276,15 +279,15 @@ class BrickGame():
                     self.c.save_ai()
                     self.v.kill_game()
 
-            self.clock.tick()
-            self.v.fill_screen(BLACK)
+            #self.clock.tick()
+            #self.v.fill_screen(BLACK)
             self.c.ai_update_model(self.m)
             display_msg,game_over = self.m.check_states()
             #check_states() updates the model based on move made by AI
             reward,new_state = self.c.ai.observe_reward(self.m)
             self.c.ai.update_q(self.m,reward,new_state)
-            self.v.show_message(display_msg)
-            self.v.draw_brick_paddle_ball(self.m)
+            #self.v.show_message(display_msg)
+            #self.v.draw_brick_paddle_ball(self.m)
             if game_over:
                 self.m.reset_game()
 
@@ -332,5 +335,5 @@ if __name__ == "__main__":
     b = BrickGame()
     #b.run_game()
     #b.train_ai()
-    #b.resume_training_ai("trained_ai.p",0)
-    b.test_ai("trained_ai.p")
+    #b.resume_training_ai("trained_ai.p",0.2)
+    b.test_ai("trained_ai_no_knowledge.p")
