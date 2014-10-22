@@ -4,15 +4,14 @@ import numpy as np
 STATE_GAME_OVER = 3
 MAX_X_VEL = 5
 
-NUM_PADDLE_X_STATES = 16
-NUM_BALL_X_STATES = 16
+NUM_PADDLE_X_STATES = 32
+NUM_BALL_X_STATES = 32
 NUM_BALL_Y_STATES = 4
 NUM_BALL_DIR_STATES = 2
-NUM_BALL_SPEED_STATES = 8
+#NUM_BALL_SPEED_STATES = 8
 #NUM_BRICK_STATES = 16
 TOTAL_ACTIONS = 11
-#TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BRICK_STATES
-TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BALL_DIR_STATES*NUM_BALL_SPEED_STATES
+TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BALL_DIR_STATES
 print "total states: "+str(TOTAL_STATES)
 print "q matrix entries: "+str(TOTAL_STATES*TOTAL_ACTIONS)
 
@@ -44,7 +43,6 @@ class AI():
 
     def update_q(self,model,reward,new_state):
         q = self.q_matrix
-        print reward
         q[self.last_state,self.last_action] += ALPHA*(reward+LAMBDA*self.find_max_reward(q,new_state)-q[self.last_state,self.last_action])
         #print str(np.count_nonzero(q)) + "/" + str(TOTAL_STATES)
 
@@ -84,8 +82,9 @@ class AI():
             #reward += model.score_change
             #print reward
             #reward = model.score_change
-            #reward = -4+model.score_change
-            return -1
+            reward = -4+model.score_change
+            #return -1
+            return reward
 
     def find_max_reward(self,q,game_state):
         state_row = q[game_state,:]
@@ -141,8 +140,9 @@ class AI():
         ball_y_state = ball_y/y_division_size
         ball_position_state = x_divisions*ball_y_state+ball_x_state
         ball_dir_and_position_state = ball_dir*x_divisions*y_divisions+ball_position_state
-        final_ball_state = ball_dir_and_position_state + ball_speed*x_divisions*y_divisions*NUM_BALL_DIR_STATES
-        return final_ball_state
+        return ball_dir_and_position_state
+        #final_ball_state = ball_dir_and_position_state + ball_speed*x_divisions*y_divisions*NUM_BALL_DIR_STATES
+        #return final_ball_state
 
     def get_brick_state(self,model):
         """returns int between 0 and 15 that encodes whether or not there
