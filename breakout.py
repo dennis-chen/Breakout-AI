@@ -5,6 +5,7 @@
 
  http://codeNtronix.com
 """
+import math
 import pickle as p
 import pygame
 import random
@@ -176,19 +177,21 @@ class BrickModel:
         if self.ball.colliderect(self.paddle):
             ball_x = self.ball.left + BALL_DIAMETER/2
             paddle_x = self.paddle.left + PADDLE_WIDTH/2
-            #dist_along_paddle = ball_x - paddle_x
-            if (ball_x - paddle_x) == 0:
-                direction_to_bounce = 0
-            else:
-                direction_to_bounce = (ball_x - paddle_x)/abs(ball_x - paddle_x)
+            dist_along_paddle = 1.0*(ball_x - paddle_x)
+            #if (ball_x - paddle_x) == 0:
+            #    direction_to_bounce = 0
+            #else:
+            #    direction_to_bounce = (ball_x - paddle_x)/abs(ball_x - paddle_x)
             self.ball.top = PADDLE_Y - BALL_DIAMETER
             self.ball_vel[1] = -self.ball_vel[1]
-            #self.ball_vel[0] = dist_along_paddle/3
-            if (ball_x - paddle_x) == 0:
-                self.ball_vel[0] = random.choice([0.2,-0.2])
-                #never allow the paddle to hit the ball straight
-            else:
-                self.ball_vel[0] = abs(self.ball_vel[0])*direction_to_bounce
+            self.ball_vel[0] = math.ceil(dist_along_paddle/5.1)
+            if self.ball_vel[0] == 0:
+                self.ball_vel[0] = random.choice([1,-1])
+            #if (ball_x - paddle_x) == 0:
+            #    self.ball_vel[0] = random.choice([0.2,-0.2])
+            #    #never allow the paddle to hit the ball straight
+            #else:
+            #    self.ball_vel[0] = abs(self.ball_vel[0])*direction_to_bounce
 
         elif self.ball.top > self.paddle.top:
             self.lives -= 1
@@ -197,7 +200,6 @@ class BrickModel:
             else:
                 self.state = STATE_GAME_OVER
         self.check_paddle_collisions()
-        print self.ball_vel
 
     def check_states(self):
         display_msg = None
@@ -335,5 +337,5 @@ if __name__ == "__main__":
     b = BrickGame()
     #b.run_game()
     #b.train_ai()
-    #b.resume_training_ai("trained_ai.p",0.2)
-    b.test_ai("trained_ai_no_knowledge.p")
+    #b.resume_training_ai("trained_ai.p",0)
+    b.test_ai("trained_ai.p")

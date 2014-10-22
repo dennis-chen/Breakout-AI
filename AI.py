@@ -4,18 +4,20 @@ import numpy as np
 STATE_GAME_OVER = 3
 MAX_X_VEL = 5
 
-NUM_PADDLE_X_STATES = 32
-NUM_BALL_X_STATES = 32
+NUM_PADDLE_X_STATES = 16
+NUM_BALL_X_STATES = 16
 NUM_BALL_Y_STATES = 4
 NUM_BALL_DIR_STATES = 2
+NUM_BALL_SPEED_STATES = 8
 #NUM_BRICK_STATES = 16
 TOTAL_ACTIONS = 11
 #TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BRICK_STATES
-TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BALL_DIR_STATES
-print TOTAL_STATES
+TOTAL_STATES = NUM_PADDLE_X_STATES*NUM_BALL_X_STATES*NUM_BALL_Y_STATES*NUM_BALL_DIR_STATES*NUM_BALL_SPEED_STATES
+print "total states: "+str(TOTAL_STATES)
+print "q matrix entries: "+str(TOTAL_STATES*TOTAL_ACTIONS)
 
 ALPHA = 0.7
-LAMBDA = 1
+LAMBDA = 0.99
 
 class AI():
     def __init__(self,model):
@@ -42,8 +44,9 @@ class AI():
 
     def update_q(self,model,reward,new_state):
         q = self.q_matrix
+        print reward
         q[self.last_state,self.last_action] += ALPHA*(reward+LAMBDA*self.find_max_reward(q,new_state)-q[self.last_state,self.last_action])
-        #print np.count_nonzero(q)
+        #print str(np.count_nonzero(q)) + "/" + str(TOTAL_STATES)
 
     def make_qlearn_move(self,model):
         q = self.q_matrix
@@ -81,8 +84,8 @@ class AI():
             #reward += model.score_change
             #print reward
             #reward = model.score_change
-            reward = -4+model.score_change
-            return reward
+            #reward = -4+model.score_change
+            return -1
 
     def find_max_reward(self,q,game_state):
         state_row = q[game_state,:]
@@ -120,7 +123,7 @@ class AI():
         return paddle_state
 
     def get_ball_state(self,model):
-        """returns int between 0 and 31 that encodes location of the ball"""
+        """returns it between 0 and 255 that encodes location of the ball"""
         ball_x = model.ball.left + model.ball_diameter/2
         ball_y = model.ball.top + model.ball_diameter/2
         ball_moving_left = (model.ball_vel[0] == abs(model.ball_vel[0]))
@@ -128,6 +131,7 @@ class AI():
             ball_dir = 0
         else:
             ball_dir = 1
+        ball_speed = abs(model.ball_vel[0])-1 #ball speed between 0 and 7
         screen_width,screen_height = model.SCREEN_SIZE
         x_divisions = NUM_BALL_X_STATES
         y_divisions = NUM_BALL_Y_STATES
@@ -135,8 +139,9 @@ class AI():
         y_division_size = int((1.0*screen_width)/y_divisions)
         ball_x_state = ball_x/x_division_size
         ball_y_state = ball_y/y_division_size
-        ball_state = x_divisions*ball_y_state+ball_x_state
-        final_ball_state = ball_dir*x_divisions*y_divisions+ball_state
+        ball_position_state = x_divisions*ball_y_state+ball_x_state
+        ball_dir_and_position_state = ball_dir*x_divisions*y_divisions+ball_position_state
+        final_ball_state = ball_dir_and_position_state + ball_speed*x_divisions*y_divisions*NUM_BALL_DIR_STATES
         return final_ball_state
 
     def get_brick_state(self,model):
