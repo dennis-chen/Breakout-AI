@@ -6,6 +6,7 @@
  http://codeNtronix.com
 """
 import argparse
+import glob
 import math
 import pickle as p
 import pygame
@@ -363,14 +364,20 @@ class BrickGame():
         self.c = BrickController(self.m,ai)
         game_counter = 0
         score_counter = 0
+        self.m.game_stuck_counter = 0
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.v.kill_game()
+            self.m.game_stuck_counter += 1
+            #self.clock.tick(200)
+            #self.v.fill_screen(BLACK)
             self.c.ai_update_model(self.m)
             display_msg,game_over = self.m.check_states()
             #check_states() updates the model based on move made by AI
-            if game_over:
+            #self.v.draw_brick_paddle_ball(self.m)
+            if game_over or self.m.game_stuck_counter > 5000:
+                self.m.game_stuck_counter = 0
                 game_counter += 1
                 score_counter += self.m.score
                 self.m.reset_game()
@@ -380,11 +387,12 @@ class BrickGame():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('ai_folder', type=readable_dir)
+    parser.add_argument('ai_folder')
+    folder = glob.glob(parser.parse_args().ai_folder + "*.p")
     b = BrickGame()
     avg_scores = []
     for ai_file in folder:
         print ai_file
-        #avg_scores.append(evaluate_ai(ai_file))
-        #print avg_scores
+        avg_scores.append((ai_file,b.evaluate_ai(ai_file)))
+        print avg_scores
 
