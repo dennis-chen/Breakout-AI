@@ -224,6 +224,9 @@ class BrickController():
         else:
             self.ai = ai
 
+    def dec_learn_rate(self,learn_dec):
+        self.ai.ALPHA = max(0,self.ai.ALPHA-learn_dec)
+
     def save_ai(self,file_name = "trained_ai.p"):
         p.dump(self.ai, open(file_name,"wb"))
 
@@ -276,27 +279,41 @@ class BrickGame():
 
     def train_ai(self,ai_base_name):
         num_deaths = 0
+        self.m.game_stuck_counter = 0
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.c.save_ai(ai_base_name + "_final.p")
                     self.v.kill_game()
-
-            #self.clock.tick()
+                elif self.c.ai.ALPHA == 0:
+                    print "FINISHED"
+            self.m.game_stuck_counter += 1
+            #game_stuck_counter tells ai to stop when it is in endless loop
+            #print self.m.game_stuck_counter
+            #self.clock.tick(200)
             #self.v.fill_screen(BLACK)
             self.c.ai_update_model(self.m)
             display_msg,game_over = self.m.check_states()
             #check_states() updates the model based on move made by AI
+            if self.m.game_stuck_counter > 10000:
+                game_over = True
+                STATE_GAME_OVER = 3
+                self.m.state == STATE_GAME_OVER
+                self.m.game_stuck_counter = 0
             reward,new_state = self.c.ai.observe_reward(self.m)
             self.c.ai.update_q(self.m,reward,new_state)
             #self.v.show_message(display_msg)
             #self.v.draw_brick_paddle_ball(self.m)
             if game_over:
+                self.m.game_stuck_counter = 0
                 num_deaths += 1
-                print num_deaths
+                #print num_deaths
                 if num_deaths%10000 == 0:
                     ai_name = ai_base_name + str(num_deaths) + ".p"
                     self.c.save_ai(ai_name)
+                    self.c.dec_learn_rate(0.05)
+                    print "iteration "+str(num_deaths)
+                    print "learning rate: "+str(self.c.ai.ALPHA)
                 self.m.reset_game()
 
     def resume_training_ai(self,ai_file_name,random_move_rate):
@@ -342,7 +359,7 @@ class BrickGame():
 if __name__ == "__main__":
     b = BrickGame()
     #b.run_game()
-    ai_base_name = "new_ai"
-    #b.train_ai(ai_base_name)
+    ai_base_name = "new_ai_1"
+    b.train_ai(ai_base_name)
     #b.resume_training_ai("trained_ai.p",0)
-    b.test_ai("new_ai_final.p")
+    #b.test_ai("new_ai_0_final.p")
