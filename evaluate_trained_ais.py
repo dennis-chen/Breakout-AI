@@ -5,6 +5,7 @@
 
  http://codeNtronix.com
 """
+import argparse
 import math
 import pickle as p
 import pygame
@@ -214,7 +215,7 @@ class BrickModel:
             display_msg = "GAME OVER. PRESS ENTER TO PLAY AGAIN"
         elif self.state == STATE_WON:
             display_msg = "YOU WON! PRESS ENTER TO PLAY AGAIN"
-        return display_msg, (self.state == STATE_GAME_OVER) #or self.state == STATE_WON)
+        return display_msg, (self.state == STATE_GAME_OVER or self.state == STATE_WON)
 
 class BrickController():
 
@@ -356,10 +357,34 @@ class BrickGame():
             if game_over:
                 self.m.reset_game()
 
+    def evaluate_ai(self,ai_file_name):
+        ai = p.load(open(ai_file_name,"rb"))
+        ai.random_move_frequency = 0
+        self.c = BrickController(self.m,ai)
+        game_counter = 0
+        score_counter = 0
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.v.kill_game()
+            self.c.ai_update_model(self.m)
+            display_msg,game_over = self.m.check_states()
+            #check_states() updates the model based on move made by AI
+            if game_over:
+                game_counter += 1
+                score_counter += self.m.score
+                self.m.reset_game()
+                if game_counter > 1000:
+                    break
+        return score_counter/(game_counter*1.0)
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('ai_folder', type=readable_dir)
     b = BrickGame()
-    #b.run_game()
-    ai_base_name = "new_ai_1"
-    #b.train_ai(ai_base_name)
-    #b.resume_training_ai("trained_ai.p",0)
-    b.test_ai("new_ai_1_final.p")
+    avg_scores = []
+    for ai_file in folder:
+        print ai_file
+        #avg_scores.append(evaluate_ai(ai_file))
+        #print avg_scores
+
